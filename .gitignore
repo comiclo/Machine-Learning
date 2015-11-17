@@ -102,3 +102,6 @@ $RECYCLE.BIN/
 
 # PyCharm
 .idea/
+
+# Backup
+backup/

@@ -20,7 +20,7 @@ class LogisticRegression:
         def sigmoid(z):
             return 1 / (1 + math.exp(-z))
 
-        def stochastic_gradient(w):
+        def gradient(w):
             if self.sgd:
                 i = random.randint(0, len(x) - 1)
                 return sigmoid(-y[i] * np.dot(w, x[i])) * (-y[i] * x[i])
@@ -31,7 +31,7 @@ class LogisticRegression:
                 return v / len(x)
 
         for _ in range(self.max_iter):
-            self.w -= self.learning_rate * stochastic_gradient(self.w)
+            self.w -= self.learning_rate * gradient(self.w)
 
     def predict(self, x):
         return np.dot(np.insert(x, 0, [1]), self.w)

@@ -1,73 +1,93 @@
+from time import time
+
 import numpy as np
-from sklearn.datasets import load_iris
-from sklearn.decomposition import PCA
+from numpy.linalg import norm
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from sklearn.datasets import load_iris
+from sklearn.decomposition import PCA
 
 # ref http://home.deib.polimi.it/matteucc/Clustering/tutorial_html/cmeans.html
 
-iris = load_iris()
-x = iris.data
-y = iris.target
 
-pca = PCA(n_components=3)
-x = pca.fit_transform(x)
+def cmeans(x, n_centers, degree=2, max_iter=100, tolerance=1e-2):
+    n = len(x)
+    u = np.zeros((n, n_centers))
+    # cluster centers
+    c = np.zeros((n_centers, len(x[0])))
 
-# degree
-m = 2
-# data length
-N = len(x)
-# cluster number
-C = 3
+    # initial U
+    for i in range(n):
+        l = np.random.sample(n_centers)
+        u[i] = l / sum(l)
 
-U = np.zeros((N, C))
-# cluster centers
-c = np.zeros((C, len(x[0])))
+    error = float('Inf')
+
+    while error > tolerance:
+        # update c
+        for j in range(n_centers):
+            up = 0
+            lo = 0
+            for i in range(n):
+                u_m = u[i][j] ** degree
+                up += u_m * x[i]
+                lo += u_m
+            c[j] = up / lo
+
+        old_U = u.copy()
+
+        # update U
+        for i in range(n):
+            for j in range(n_centers):
+                s = 0
+                for k in range(n_centers):
+                    up = norm(x[i] - c[j])
+                    lo = norm(x[i] - c[k])
+                    s += (up / lo) ** (2 / (degree - 1))
+                u[i][j] = 1 / s
+
+        # compute error
+        error = norm(old_U - u)
+
+    return u
 
 
-# initial U
-for i in range(N):
-    l = np.random.sample(C)
-    U[i] = l / sum(l)
+def exmple_2d():
+    iris = load_iris()
+    x = iris.data
+    y = iris.target
 
-max_iter = 300
-tolerance = 0.01
-error = 100
+    pca = PCA(n_components=2)
+    x = pca.fit_transform(x)
 
-while error > tolerance:
-    # update c
-    for j in range(C):
-        up = 0
-        lo = 0
-        for i in range(N):
-            u_m = U[i][j] ** m
-            up += u_m * x[i]
-            lo += u_m
-        c[j] = up / lo
+    u = cmeans(x, 3)
 
-    old_U = U.copy()
+    # plot
+    for i in range(len(x)):
+        plt.plot(x[i][0], x[i][1], 'o', color=[u[i][j] for j in range(3)])
+    plt.show()
 
-    # update U
-    for i in range(N):
-        for j in range(C):
-            s = 0
-            for k in range(C):
-                up = np.linalg.norm(x[i] - c[j])
-                lo = np.linalg.norm(x[i] - c[k])
-                s += (up / lo) ** (2 / (m - 1))
-            U[i][j] = 1 / s
 
-    # compute error
-    error = np.linalg.norm(old_U - U)
+def example_3d():
+    iris = load_iris()
+    x = iris.data
+    y = iris.target
 
-# plot
-# for i in range(N):
-#     plt.plot(x[i][0], x[i][1], 'o', color=[U[i][j] for j in range(3)])
-# plt.show()
+    pca = PCA(n_components=3)
+    x = pca.fit_transform(x)
 
-# plot 3D
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-for i in range(N):
-    ax.scatter(x[i][0], x[i][1], x[i][2], marker='o', color=[U[i][j] for j in range(3)])
-plt.show()
+    u = cmeans(x, 3)
+
+    # plot 3D
+    n = len(x)
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    for i in range(n):
+        ax.scatter(x[i][0], x[i][1], x[i][2], marker='o', color=[u[i][j] for j in range(3)])
+    plt.show()
+
+
+if __name__ == '__main__':
+    # exmple_2d()
+    example_3d()
